@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+</head>
+
+<body>
+
+	<nav>
+		<a href="/" data-link>首页</a>
+		<a href="/about" data-link>关于</a>
+		<a href="/products" data-link>产品</a>
+		<a href="/products/category1" data-link>分类1</a>
+		<a href="/products/category2" data-link>分类2</a>
+	</nav>
+	<div id="content">
+		<!-- 路由内容将在这里显示 -->
+	</div>
+	<script>
+		const Router = {
+			routes: [],
+			beforeEachHooks: [],
+
+			addRoute(path, callback) {
+				this.routes.push({ path, callback });
+			},
+
+			beforeEach(hook) {
+				this.beforeEachHooks.push(hook);
+			},
+
+			navigate(toPath) {
+				const fromPath = window.location.pathname;
+				const toRoute = this.routes.find(route => route.path === toPath);
+
+				if (!toRoute) {
+					console.log("Route not found");
+					return;
+				}
+
+				const next = () => {
+					window.history.pushState(null, null, toPath);
+					toRoute.callback();
+				};
+
+				const executeHooks = (hooks, index) => {
+					if (index >= hooks.length) {
+						next();
+						return;
+					}
+					hooks[index](toPath, fromPath, () => {// 记录前进的路由与，当前路由并执行跳转，执行beforeEach
+						executeHooks(hooks, index + 1);
+					});
+				};
+
+				executeHooks(this.beforeEachHooks, 0);
+			}
+		};
+
+		Router.addRoute("/", () => {
+			document.getElementById("content").textContent = "这是首页内容";
+		});
+
+		Router.addRoute("/about", () => {
+			document.getElementById("content").textContent = "这是关于页面内容";
+		});
+
+		Router.addRoute("/products", () => {
+			document.getElementById("content").innerHTML = `
+    <h2>产品页面</h2>
+    <div id="product-content"></div>
+  `;
+		});
+
+		Router.addRoute("/products/category1", () => {
+			document.getElementById("product-content").textContent = "这是分类1页面内容";
+		});
+
+		Router.addRoute("/products/category2", () => {
+			document.getElementById("product-content").textContent = "这是分类2页面内容";
+		});
+
+		// 假设需要用户登录才能访问某个页面
+		let isAuthenticated = true; // 假设这是一个验证用户登录状态的函数
+		Router.beforeEach((to, from, next) => {
+			console.log(`准备从路径 ${from} 切换到路径 ${to}`);
+
+
+			if (!isAuthenticated) {
+				console.log("用户未登录，阻止路由切换");
+				// 不调用 next()，路由切换被阻止
+			} else {
+				console.log("用户已登录，允许路由切换");
+				// isAuthenticated = false
+				next(); // 继续路由导航
+			}
+		});
+
+		// 在链接被点击时触发导航
+		document.querySelectorAll("a[data-link]").forEach((link) => {
+			link.addEventListener("click", (e) => {
+				e.preventDefault();
+				const path = link.getAttribute("href");
+				Router.navigate(path);
+			});
+		});
+
+		// 初始页面加载时触发导航
+		window.addEventListener("load", () => {
+			Router.navigate(window.location.pathname);
+		});
+
+	</script>
+</body>
+
+</html>
