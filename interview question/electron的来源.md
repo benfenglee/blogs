@@ -1,2 +1,2 @@
 ## electron来自
-![alt text](./image/image.png)
+![alt text](../images/image.png)
